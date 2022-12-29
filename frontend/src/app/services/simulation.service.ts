@@ -16,12 +16,15 @@ import {MinerService} from "./miner.service";
 import {BlockchainService} from "./blockchain.service";
 import {NodeType} from "../simulation/nodeType";
 import {AddMinerService} from "./add-miner.service";
-import {COUNTRIES} from "../simulation/model/country";
+import {COUNTRIES, getRandomCountryEnumName} from "../simulation/model/country";
 import { Block } from '../simulation/model/block';
 import {EdgeService} from "./edge.service";
 import {MinersDeletingService} from "./miners-deleting.service";
 import {TimePeriod} from "../utils/constants";
-import {ChartDataService, CountryDataSingleMonth} from "./chart-data.service";
+import {MinersAmountChartService} from "./charts/miners-amount-chart.service";
+import {MeanMoneyChartService} from "./charts/mean-money-chart.service";
+import {CountryDataSingleMonth} from "./charts/country-data-classes";
+import {ProtocolService} from "./protocol.service";
 
 @Injectable({
   providedIn: 'root'
@@ -40,7 +43,9 @@ export class SimulationService {
               private addMinerService: AddMinerService,
               private edgeService: EdgeService,
               private minersDeletingService: MinersDeletingService,
-              private chartDataService: ChartDataService,
+              private minersAmountChartService: MinersAmountChartService,
+              private meanMoneyChartService: MeanMoneyChartService,
+              private protocolService: ProtocolService,
   ) {
     this.nextMinerID = this.parametersService.getAllNodes();
   }
@@ -118,11 +123,19 @@ export class SimulationService {
       )
       .subscribe();
 
-    this.chartDataService.getRequest().pipe(
-      tap((monthNumber) => {
-        const data = this.collectMinerData();
-        this.chartDataService.addData(data.total, data.country, monthNumber);
-        this.chartDataService.emitData();
+    this.minersAmountChartService.getRequest().pipe(
+      tap((monthNumber: number) => {
+        const data = this.collectMinerAmountData();
+        this.minersAmountChartService.addData(data.total, data.country, monthNumber);
+        this.minersAmountChartService.emitData();
+      })
+    ).subscribe();
+
+    this.meanMoneyChartService.getRequest().pipe(
+      tap((monthNumber: number) => {
+        const meanData = this.collectMeanMoneyData();
+        this.meanMoneyChartService.addData(meanData.total, meanData.country, monthNumber);
+        this.meanMoneyChartService.emitData();
       })
     ).subscribe();
   }
@@ -142,8 +155,7 @@ export class SimulationService {
             this.addMinerSubscription?.unsubscribe();
           }
         })
-      )
-      .subscribe();
+      ).subscribe();
   }
   private stopAddingMiners() {
     this.addMinerFrequencySubscription?.unsubscribe();
@@ -155,7 +167,7 @@ export class SimulationService {
     this.nextMinerID += 1;
     const immortalNode = this.getRandomNonMiner();
 
-    const newMiner = new Node(newMinerId, NodeType.Miner, immortalNode.country, 20); //todo add money parameter
+    const newMiner = new Node(newMinerId, NodeType.Miner, getRandomCountryEnumName(), randomIntFromInterval(50, 150));
     newMiner.computingPower = randomIntFromInterval(1, 10);
 
 
@@ -225,8 +237,8 @@ export class SimulationService {
     if (!senderNode) return;
     if (!receiverNode) return;
 
-    const receivedBlock = senderNode.getLast();
-    const currLastBlock = receiverNode.getLast();
+    const receivedBlock = senderNode.getLast(this.protocolService.protocol);
+    const currLastBlock = receiverNode.getLast(this.protocolService.protocol);
 
     if (currLastBlock?.id != receivedBlock?.id) {
       receiverNode.addBlock(receivedBlock)
@@ -276,7 +288,7 @@ export class SimulationService {
     return Array.from(this.graph.nodes.values()).filter((value, index) => value.nodeType != NodeType.Miner);
   }
 
-  private collectMinerData() {
+  private collectMinerAmountData() {
     const miners = this.getMiners();
 
     const totalCount = miners.length;
@@ -310,7 +322,7 @@ export class SimulationService {
           console.log("NO SUCH COUNTRY");
           break;
       }
-    })
+    });
 
     const byCountry = new CountryDataSingleMonth(
       counter.romania.toString(),
@@ -323,6 +335,79 @@ export class SimulationService {
     return {
       total: totalCount.toString(),
       country: byCountry
+    }
+  }
+
+  private collectMeanMoneyData() {
+    const miners = this.getMiners();
+
+    const totalCount = miners.length !== 0 ? miners.length : 1;
+
+    let counter = {
+      romania: 0,
+      poland: 0,
+      spain: 0,
+      germany: 0,
+      greatBritain: 0
+    };
+
+    let moneySum = {
+      romania: 0,
+      poland: 0,
+      spain: 0,
+      germany: 0,
+      greatBritain: 0
+    };
+
+    let totalSum: number = 0;
+
+    miners.forEach(miner => {
+      totalSum += miner.money;
+      switch (miner.country) {
+        case COUNTRIES[0].enumName:
+          counter.romania++;
+          moneySum.romania += miner.money;
+          break;
+        case COUNTRIES[1].enumName:
+          counter.poland++;
+          moneySum.poland += miner.money;
+          break;
+        case COUNTRIES[2].enumName:
+          counter.spain++;
+          moneySum.spain += miner.money;
+          break;
+        case COUNTRIES[3].enumName:
+          counter.germany++;
+          moneySum.germany += miner.money;
+          break;
+        case COUNTRIES[4].enumName:
+          counter.greatBritain++;
+          moneySum.greatBritain += miner.money;
+          break;
+        default:
+          console.log("NO SUCH COUNTRY");
+          break;
+      }
+    });
+
+    for (let counterKey in counter) {
+      if (counter[counterKey] === 0)
+        counter[counterKey] = 1;
+    }
+
+    const meanByCountry = new CountryDataSingleMonth(
+      (moneySum.romania / counter.romania).toString(),
+      (moneySum.poland / counter.poland).toString(),
+      (moneySum.spain / counter.spain).toString(),
+      (moneySum.germany / counter.germany).toString(),
+      (moneySum.greatBritain / counter.greatBritain).toString()
+    );
+
+    const meanTotal = (totalSum / totalCount).toString();
+
+    return {
+      total: meanTotal,
+      country: meanByCountry
     }
   }
 }

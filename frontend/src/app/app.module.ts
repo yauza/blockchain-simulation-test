@@ -33,7 +33,10 @@ import { AddMinerComponent } from './simulation/miners/add-miner/add-miner.compo
 import { SimulationTimerComponent } from './simulation/simulation-timer/simulation-timer.component';
 import { SimulationTimerPipe } from './utils/pipes/simulation-timer.pipe';
 import { CommonModule } from '@angular/common';
+import { ChartPairComponent } from './simulation/charts/chart-pair/chart-pair.component';
 import { ChartsComponent } from './simulation/charts/charts.component';
+import { ProtocolSwitchComponent } from './simulation/protocol-switch/protocol-switch.component';
+import {MatSlideToggleModule} from "@angular/material/slide-toggle";
 
 @NgModule({
   declarations: [
@@ -50,33 +53,36 @@ import { ChartsComponent } from './simulation/charts/charts.component';
     AddMinerComponent,
     SimulationTimerComponent,
     SimulationTimerPipe,
-    ChartsComponent
+    ChartPairComponent,
+    ChartsComponent,
+    ProtocolSwitchComponent
   ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    BrowserAnimationsModule,
-    MatTabsModule,
-    FlexModule,
-    FlexLayoutModule,
-    MatTableModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatButtonModule,
-    MatInputModule,
-    ReactiveFormsModule,
-    FormsModule,
-    MatSliderModule,
-    MatCardModule,
-    MatSnackBarModule,
-    MatButtonToggleModule,
-    MatPaginatorModule,
-    MatSortModule,
-    MatDialogModule,
-    MatSelectModule,
-    MatTooltipModule,
-    CommonModule
-  ],
+    imports: [
+        BrowserModule,
+        AppRoutingModule,
+        BrowserAnimationsModule,
+        MatTabsModule,
+        FlexModule,
+        FlexLayoutModule,
+        MatTableModule,
+        MatFormFieldModule,
+        MatIconModule,
+        MatButtonModule,
+        MatInputModule,
+        ReactiveFormsModule,
+        FormsModule,
+        MatSliderModule,
+        MatCardModule,
+        MatSnackBarModule,
+        MatButtonToggleModule,
+        MatPaginatorModule,
+        MatSortModule,
+        MatDialogModule,
+        MatSelectModule,
+        MatTooltipModule,
+        CommonModule,
+        MatSlideToggleModule
+    ],
   providers: [],
   bootstrap: [AppComponent]
 })
